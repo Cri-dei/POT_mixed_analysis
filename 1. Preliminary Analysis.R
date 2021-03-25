@@ -33,6 +33,7 @@ library(mapdata)
 library(mapproj)
 library(ggplot2)
 library(cowplot)
+library(rnrfa)
 
 # CHOOSE DIRECTORY
 
@@ -45,42 +46,53 @@ setwd(path)
 
 load("./Results/Final_matrix_POTMix_lag3.RData")
 #load("./Results/POT_Lista.RData")
+allStations <- catalogue()
+
+
+Initial_POT_matrix<-POT_matrix
+
+na_pos<-which(is.na(POT_matrix[,1])==TRUE)
+
+POT_matrix<-POT_matrix[-na_pos,]
+
+#dISTANCE IN KM
+POT_matrix$Distance<-POT_matrix$Distance/1000
+
+
+# P value threshold
 
 pv_th<-0.01
-#pv_th<-0.005
+pv_th<-0.005
+
 
 POT_matrix$DEP_12<-ifelse(POT_matrix$POT_pvalue_12<=pv_th,2,1)
 POT_matrix$DEP_21<-ifelse(POT_matrix$POT_pvalue_21<=pv_th,2,1)
 
 nrow(POT_matrix)
-na_pos<-which(is.na(POT_matrix[,1])==TRUE)
 
-POT_matrix_notna<-POT_matrix[-na_pos,]
+100*length(which(POT_matrix$Status=="Both DEP"))/nrow(POT_matrix)
+100*length(which(POT_matrix$Status=="Both IND"))/nrow(POT_matrix)
+100*length(which(POT_matrix$Status=="Not equal"))/nrow(POT_matrix)
 
-nrow(POT_matrix_notna)
-100*length(which(POT_matrix_notna$Status=="Both DEP"))/nrow(POT_matrix_notna)
-100*length(which(POT_matrix_notna$Status=="Both IND"))/nrow(POT_matrix_notna)
-100*length(which(POT_matrix_notna$Status=="Not equal"))/nrow(POT_matrix_notna)
-
-Summary<-data.frame(matrix(NA,2,3))
-colnames(Summary)<-c("Both Dependent","Both Independent","Not symmetric")
-rownames(Summary)<-c("Number Couples", "Percentages [%]")
-
-Summary$`Both Dependent`[1]<-length(which(POT_matrix_notna$Status=="Both DEP"))
-Summary$`Both Independent`[1]<-length(which(POT_matrix_notna$Status=="Both IND"))
-Summary$`Not symmetric`[1]<-length(which(POT_matrix_notna$Status=="Not equal"))
-
-Summary$`Both Dependent`[2]<-round(100*length(which(POT_matrix_notna$Status=="Both DEP"))/nrow(POT_matrix_notna),2)
-Summary$`Both Independent`[2]<-round(100*length(which(POT_matrix_notna$Status=="Both IND"))/nrow(POT_matrix_notna),2)
-Summary$`Not symmetric`[2]<-round(100*length(which(POT_matrix_notna$Status=="Not equal"))/nrow(POT_matrix_notna),2)
 
 POT_matrix$Equality<-rowSums(POT_matrix[,c("DEP_12","DEP_21")])
 
 POT_matrix$Status<-ifelse(POT_matrix$Equality==2,"Both IND",
                           ifelse(POT_matrix$Equality==4,"Both DEP","Not equal")) 
 
-#dISTANCE IN KM
-POT_matrix$Distance<-POT_matrix$Distance/1000
+
+Summary<-data.frame(matrix(NA,2,3))
+colnames(Summary)<-c("Both Dependent","Both Independent","Not symmetric")
+rownames(Summary)<-c("Number Couples", "Percentages [%]")
+
+Summary$`Both Dependent`[1]<-length(which(POT_matrix$Status=="Both DEP"))
+Summary$`Both Independent`[1]<-length(which(POT_matrix$Status=="Both IND"))
+Summary$`Not symmetric`[1]<-length(which(POT_matrix$Status=="Not equal"))
+
+Summary$`Both Dependent`[2]<-round(100*length(which(POT_matrix$Status=="Both DEP"))/nrow(POT_matrix),2)
+Summary$`Both Independent`[2]<-round(100*length(which(POT_matrix$Status=="Both IND"))/nrow(POT_matrix),2)
+Summary$`Not symmetric`[2]<-round(100*length(which(POT_matrix$Status=="Not equal"))/nrow(POT_matrix),2)
+
 
 #################################### PLOT  ###########################################
 
@@ -212,4 +224,12 @@ GG_classes_dist
 ggsave("KT_DISTANCE_classes.jpeg", units="in",dpi=400, height=7,width =10)
 
 #######################################################################
+
+print(paste0("You runned the analysis with pvalue th : ", pv_th))
+
+############################################################àà
+
+########### GGPLOT FOR SYNCRONY ##############
+
+
 
